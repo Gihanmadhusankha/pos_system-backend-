@@ -1,0 +1,22 @@
+{
+  "server": {
+    "port": "8080",
+    "ip": "127.0.0.1"
+  },
+  "db": {
+    "host": "127.0.0.1",
+    "userName": "root",
+    "password": "Gihan@123",
+    "db": "pos_system",
+    "port": "3306"
+  },
+  "log": {
+    "fileName": "access.log",
+    "path": "../log",
+    "level": "debug"
+  },
+  "jwtSecret": "NlkjbaasdIguIGI8576597567496578dfs&$(^*$(&^TGFhfkHGKHGF",
+  "jwtExpireTime": "30m",
+  "refreshSecret": "fsdlJsdfs5765975674965787%^(%&$(^*$(&^TGFhfkHGDHREAF",
+  "refreshExpireTime": "7d"
+}

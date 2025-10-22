@@ -1,0 +1,47 @@
+{
+  "name": "task_nodejs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "jest --NODE_ENV=test --detectOpenHandles",
+    "start-dev": "nodemon --exec ts-node src/app.ts --NODE_ENV=dev",
+    "build": "tsc",
+    "start": "node dist/app.js --NODE_ENV=prod ",
+    "staging": "tsc && node dist/app.js --NODE_ENV=staging  "
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.7.1",
+    "@types/nodemon": "^1.19.6",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "config": "^4.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "mysql2": "^3.15.1",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.27",
+    "winston": "^3.18.3"
+  }
+}
