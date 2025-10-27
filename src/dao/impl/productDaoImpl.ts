@@ -9,6 +9,7 @@ import { CodesRes } from "../../support/codes-sup";
 import { ValidationType } from "../../enum/validation-type";
 import { ValidationStatus } from "../../enum/validation-status";
 import { CommonPaginationDto } from "../../dto/commonPagination-dto";
+import { loadRequestDTO } from "../../dto/loadRequest-dto";
 
 export class ProductDaoImpl implements ProductDao {
 
@@ -89,6 +90,28 @@ export class ProductDaoImpl implements ProductDao {
 
   async save(product: Product, productRepo: Repository<Product>): Promise<Product> {
     return await productRepo.save(product);
+  }
+
+
+  async findProduct(loadRequest: loadRequestDTO): Promise<Product |null> {
+      const productRepo: Repository<Product> = AppDataSource.getRepository(Product);
+  
+      const query = productRepo.createQueryBuilder("product");
+  
+      if (loadRequest.getId()) {
+          query.where("product.productId = :id", { id: loadRequest.getId() });
+      }
+  
+      if (loadRequest.getName()) {
+          if (loadRequest.getId()) {
+              query.orWhere("product.name = :name", { name: loadRequest.getName() });
+          } else {
+              query.where("product.name = :name", { name: loadRequest.getName() });
+          }
+      }
+  
+      const customer = await query.getOne();
+      return customer;
   }
 }
 

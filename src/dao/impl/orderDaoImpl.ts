@@ -7,6 +7,7 @@ import { OrderStatus } from "../../enum/orderStatus";
 import { Status } from "../../enum/status";
 import { OrderDao } from "../orederDao";
 import { CommonPaginationDto } from "../../dto/commonPagination-dto";
+import { loadRequestDTO } from "../../dto/loadRequest-dto";
 
 
 
@@ -69,7 +70,20 @@ export class OrderDaoImpl implements OrderDao {
     }
 
 
-
+   async findOrder(loadRequest: loadRequestDTO): Promise<Order |null> {
+        const orderRepo: Repository<Order> = AppDataSource.getRepository(Order);
+    
+        const query = orderRepo.createQueryBuilder("order");
+    
+        if (loadRequest.getId()) {
+            query.where("order.orderId = :id", { id: loadRequest.getId() });
+        }
+    
+        const customer = await query.getOne();
+        return customer;
+    }
+       
+   
 }
 
 

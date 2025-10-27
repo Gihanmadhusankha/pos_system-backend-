@@ -14,16 +14,17 @@ import { CustomerResponseDTO } from "../../../dto/customer-dto/customerResponse-
 import { CommonPaginationDto } from "../../../dto/commonPagination-dto";
 import { UserRole } from "../../../enum/userRole";
 import { LoginUserInfo } from "../../../dto/system/login-user";
-
+import { loadRequestDTO } from "../../../dto/loadRequest-dto";
 
 export class CustomerServiceImpl implements CustomerService {
   private customerDao: CustomerDao = new CustomerDaoImpl();
 
   //----------------CUSTOMER MANAGE--------------------------------
 
-  async manageCustomer(manageCustomer: ManageCustomerRequest, userInfo: LoginUserInfo): Promise<CommonResponse> {
-
-
+  async manageCustomer(
+    manageCustomer: ManageCustomerRequest,
+    userInfo: LoginUserInfo
+  ): Promise<CommonResponse> {
     const cr = new CommonResponse();
     try {
       if (userInfo.getRole() !== UserRole.STAFF) {
@@ -31,14 +32,13 @@ export class CustomerServiceImpl implements CustomerService {
           CodesRes.validationError,
           "Invalid User",
           { code: ValidationType.INVALID_USER, type: ValidationStatus.WARNING, msgParams: null }
-
         );
       }
-      let customerData: CustomerResponseDTO | null = null;
+
+      let customer: Customer | null = null;
 
       await AppDataSource.transaction(async (transactionManager) => {
         const customerRepo: Repository<Customer> = transactionManager.getRepository(Customer);
-        let customer: Customer | null = null;
 
         // Update existing customer
         if (manageCustomer.isIsUpdate()) {
@@ -92,20 +92,12 @@ export class CustomerServiceImpl implements CustomerService {
             { code: ValidationType.INVALID_OPERATION, type: ValidationStatus.WARNING, msgParams: null }
           );
         }
-
-        // Build response DTO
-        if (customer) {
-          customerData = new CustomerResponseDTO();
-          customerData.setCustomerId(customer.customerId);
-          customerData.setName(customer.name);
-          customerData.setEmail(customer.email);
-          customerData.setPhoneNumber(customer.phoneNumber);
-          customerData.setAddress(customer.address);
-        }
       });
 
       cr.setStatus(true);
-      cr.setExtra(customerData);
+      if (customer) {
+        cr.setExtra(this.customerResponse(customer));
+      }
     } catch (error: any) {
       console.log(error);
       cr.setStatus(false);
@@ -119,9 +111,13 @@ export class CustomerServiceImpl implements CustomerService {
 
     return cr;
   }
+
   //---------------------CUSTOMER LIST------------------------------------
 
-  async customerList(paginationRequest: CommonPaginationDto, userInfo: LoginUserInfo): Promise<CommonResponse> {
+  async customerList(
+    paginationRequest: CommonPaginationDto,
+    userInfo: LoginUserInfo
+  ): Promise<CommonResponse> {
     const cr: CommonResponse = new CommonResponse();
     try {
       if (userInfo.getRole() !== UserRole.STAFF) {
@@ -129,13 +125,13 @@ export class CustomerServiceImpl implements CustomerService {
           CodesRes.validationError,
           "Invalid User",
           { code: ValidationType.INVALID_USER, type: ValidationStatus.WARNING, msgParams: null }
-
         );
       }
 
       const customers = await this.customerDao.listCustomer(paginationRequest);
-    }
-    catch (error: any) {
+      cr.setStatus(true);
+      cr.setExtra(customers);
+    } catch (error: any) {
       console.log(error);
       cr.setStatus(false);
       cr.setExtra(error.message);
@@ -149,5 +145,49 @@ export class CustomerServiceImpl implements CustomerService {
     return cr;
   }
 
+  //--------------------------LOAD CUSTOMERS---------------------------
+  async loadCustomer(
+    loadRequest: loadRequestDTO,
+    userInfo: LoginUserInfo
+  ): Promise<CommonResponse> {
+    const cr: CommonResponse = new CommonResponse();
+    try {
+      if (userInfo.getRole() !== UserRole.STAFF) {
+        throw new ValidationExceptionV2(
+          CodesRes.validationError,
+          "Invalid User",
+          { code: ValidationType.INVALID_USER, type: ValidationStatus.WARNING, msgParams: null }
+        );
+      }
 
+      const customer = await this.customerDao.findCustomer(loadRequest);
+
+      cr.setStatus(true);
+      if (customer) {
+        cr.setExtra(this.customerResponse(customer));
+      }
+    } catch (error: any) {
+      console.log(error);
+      cr.setStatus(false);
+      cr.setExtra(error.message);
+      cr.setValidation({
+        code: error.validationCode ?? ValidationType.SRV_SIDE_EXC,
+        type: error.validationType ?? ValidationStatus.ERROR,
+        msgParams: error.validationMsgParams ?? null,
+      });
+    }
+
+    return cr;
+  }
+
+  //--------------------------HELPER METHOD---------------------------
+  private customerResponse(customer: Customer): CustomerResponseDTO {
+    const customerData = new CustomerResponseDTO();
+    customerData.setCustomerId(customer.customerId);
+    customerData.setName(customer.name);
+    customerData.setEmail(customer.email);
+    customerData.setPhoneNumber(customer.phoneNumber);
+    customerData.setAddress(customer.address);
+    return customerData;
+  }
 }

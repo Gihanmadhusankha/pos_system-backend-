@@ -11,6 +11,7 @@ import ValidationExceptionV2 from "../../services/exception/exception-impl/valid
 import { CodesRes } from "../../support/codes-sup";
 import { ValidationType } from "../../enum/validation-type";
 import { ValidationStatus } from "../../enum/validation-status";
+import { loadRequestDTO } from "../../dto/loadRequest-dto";
 
 export class UserDaoImpl implements UserDao {
 
@@ -23,7 +24,7 @@ export class UserDaoImpl implements UserDao {
         return await query.getOne();
     }
 
-    async createUser(registerRequestDto: RegisterRequestDto, userRepo: Repository<User>): Promise<User> {
+    async createUser(registerRequestDto: RegisterRequestDto | ManageStaffRequest, userRepo: Repository<User>): Promise<User> {
 
         let userEntity: User = new User();
         userEntity.name = registerRequestDto.getName();
@@ -60,6 +61,11 @@ export class UserDaoImpl implements UserDao {
             .where("user.status = :status", { status: Status.ONLINE })
             .andWhere("user.role = :role", { role: UserRole.STAFF });
 
+        if (paginationDto.getSearchText()) {
+            const searchTerm = paginationDto.getSearchText().trim().toLowerCase();
+            query.andWhere("LOWER(user.name) LIKE :search", { search: `%${searchTerm}%` });
+        }
+
         if (paginationDto.isIsReqPagination()) {
             query.skip(paginationDto.getStartIndex());
             query.take(paginationDto.getMaxResult());
@@ -67,7 +73,7 @@ export class UserDaoImpl implements UserDao {
 
         return await query.getMany();
     }
-    async updateUser(manageStaffDto: ManageStaffRequest, userRepo: Repository<User>): Promise<User> {
+    async updateUser(manageStaffDto: ManageStaffRequest , userRepo: Repository<User>): Promise<User> {
         const user = await userRepo.findOne({ where: { userId: manageStaffDto.getUserId() } });
 
         if (!user) {
@@ -96,4 +102,26 @@ export class UserDaoImpl implements UserDao {
         user.status = Status.OFFLINE;
         await userRepo.save(user);
     }
+    async findUser(loadRequest: loadRequestDTO): Promise<User|null> {
+          const userRepo: Repository<User> = AppDataSource.getRepository(User);
+         
+             const query = userRepo.createQueryBuilder("user");
+         
+             if (loadRequest.getId()) {
+                 query.where("user.userId = :id", { id: loadRequest.getId() });
+             }
+         
+             if (loadRequest.getName()) {
+                 if (loadRequest.getId()) {
+                     query.orWhere("user.name = :name", { name: loadRequest.getName() });
+                 } else {
+                     query.where("user.name = :name", { name: loadRequest.getName() });
+                 }
+             }
+         
+             const customer = await query.getOne();
+             return customer;
+         }
+        
+    
 }

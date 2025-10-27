@@ -11,6 +11,7 @@ import { ValidationType } from "../../enum/validation-type";
 import { ValidationStatus } from "../../enum/validation-status";
 import { CommonPaginationDto } from "../../dto/commonPagination-dto";
 import { CreateCustomerDTO } from "../../dto/customer-dto/createCustomer-dto";
+import { loadRequestDTO } from "../../dto/loadRequest-dto";
 
 export class CustomerDaoImpl implements CustomerDao {
 
@@ -98,4 +99,25 @@ export class CustomerDaoImpl implements CustomerDao {
 
     return await query.getMany();
   }
+  async findCustomer(loadRequest: loadRequestDTO): Promise<Customer> {
+    const customerRepo: Repository<Customer> = AppDataSource.getRepository(Customer);
+
+    const query = customerRepo.createQueryBuilder("customer");
+
+    if (loadRequest.getId()) {
+        query.where("customer.customerId = :id", { id: loadRequest.getId() });
+    }
+
+    if (loadRequest.getName()) {
+        if (loadRequest.getId()) {
+            query.orWhere("customer.name = :name", { name: loadRequest.getName() });
+        } else {
+            query.where("customer.name = :name", { name: loadRequest.getName() });
+        }
+    }
+
+    const customer = await query.getOne();
+    return customer;
+}
+
 }

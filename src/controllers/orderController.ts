@@ -12,6 +12,7 @@ import { OrderServiceImpl } from "../services/order-service/Impl/OrderServiceImp
 import { CreateOrderDTO } from "../dto/order-dto/createOrder-dto";
 import { CommonPaginationDto } from "../dto/commonPagination-dto";
 import { orderRequest } from "../dto/order-dto/OrderRequestId-dto";
+import { loadRequestDTO } from "../dto/loadRequest-dto";
 
 const orderService: OrderService = new OrderServiceImpl();
 
@@ -89,3 +90,16 @@ exports.cancelOrder = async (req: Request, res: Response, next: NextFunction) =>
     next(err);
   }
 };
+//-------------------------LOAD ORDERS-----------------------------
+ exports.loadProduct=async(req:express.Request,res:express.Response,next:NextFunction)=>{
+   try{
+       let userInfo: LoginUserInfo = LoginUserInfoSup.getLoginUserInfoFromReq(req);
+  
+       let loadRequest:loadRequestDTO=new  loadRequestDTO();
+       const response:CommonResponse=await orderService.loadOrder(loadRequest,userInfo);
+       res.send(response);
+  
+    } catch (err) {
+      next(err);
+    }
+  }

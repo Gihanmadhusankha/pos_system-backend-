@@ -6,6 +6,7 @@ import { CommonPaginationDto } from "../dto/commonPagination-dto";
 import { CustomerServiceImpl } from "../services/customer-service/Impl/CustomerServiceImpl";
 import { LoginUserInfo } from "../dto/system/login-user";
 import { LoginUserInfoSup } from "../support/login-user-info-sup";
+import { loadRequestDTO } from "../dto/loadRequest-dto";
 
 
 const customerService: CustomerService = new CustomerServiceImpl();
@@ -42,5 +43,17 @@ exports.customerList = async (req: express.Request, res: express.Response, next:
   } catch (err) {
     next(err);
   }
+  //-------------------LOAD CUSTOMERS------------------------------
+  exports.loadCustomer = async (req: express.Request, res: express.Response, next: NextFunction) => {
+    try{
+     let userInfo: LoginUserInfo = LoginUserInfoSup.getLoginUserInfoFromReq(req);
 
+     let loadRequest:loadRequestDTO=new  loadRequestDTO();
+     const response:CommonResponse=await customerService.loadCustomer(loadRequest,userInfo)
+     res.send(response);
+
+  } catch (err) {
+    next(err);
+  }
+}
 }

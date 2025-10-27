@@ -1,4 +1,4 @@
-import express from "express";
+import express, { NextFunction } from "express";
 import { CommonResponse } from "../common/dto/common-response";
 import { SearchDto } from "../dto/search-dto";
 import { LoginUserInfo } from "../dto/system/login-user";
@@ -6,6 +6,7 @@ import { LoginUserInfoSup } from "../support/login-user-info-sup";
 import { ManageStaffRequest } from "../dto/user-dtos/manageStaff-dto";
 import { StaffService } from "../services/staff-service/StaffService";
 import { StaffServiceImpl } from "../services/staff-service/Impl/StaffServiceImpl";
+import { loadRequestDTO } from "../dto/loadRequest-dto";
 
 
 const staffService: StaffService = new StaffServiceImpl();
@@ -49,3 +50,16 @@ exports.staffList = async (req: express.Request, res: express.Response, next: ex
         next(err);
     }
 }
+//-------------------------LOAD STAFF-----------------------------
+ exports.loadProduct=async(req:express.Request,res:express.Response,next:NextFunction)=>{
+   try{
+       let userInfo: LoginUserInfo = LoginUserInfoSup.getLoginUserInfoFromReq(req);
+  
+       let loadRequest:loadRequestDTO=new  loadRequestDTO();
+       const response:CommonResponse=await staffService.loadUser(loadRequest,userInfo);
+       res.send(response);
+  
+    } catch (err) {
+      next(err);
+    }
+  }

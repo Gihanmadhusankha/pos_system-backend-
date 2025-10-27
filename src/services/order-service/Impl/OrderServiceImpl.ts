@@ -30,6 +30,7 @@ import { OrderItemResponseDTO } from "../../../dto/orderItem-dto/orderIteamRespo
 import { LoginUserInfo } from "../../../dto/system/login-user";
 import { UserRole } from "../../../enum/userRole";
 import { UserResponseDTO } from "../../../dto/user-dtos/userResponse-dto";
+import { loadRequestDTO } from "../../../dto/loadRequest-dto";
 
 
 export class OrderServiceImpl implements OrderService {
@@ -402,4 +403,37 @@ export class OrderServiceImpl implements OrderService {
     }
     return cr;
   }
-}
+
+    //----------------------LOAD ORDERS -------------------
+    async loadOrder(loadRequest: loadRequestDTO,userInfo:LoginUserInfo): Promise<CommonResponse> {
+         const cr: CommonResponse = new CommonResponse()
+          try{
+
+             if (userInfo.getRole() !== UserRole.STAFF) {
+        throw new ValidationExceptionV2(
+          CodesRes.validationError,
+          "Invalid User",
+          { code: ValidationType.INVALID_USER, type: ValidationStatus.WARNING, msgParams: null }
+        );
+      }
+              const order = await this.orderDao.findOrder(loadRequest);
+        
+              cr.setStatus(true);
+              if (order) {
+                cr.setExtra(this.orderResponse(order));
+              }
+            } catch (error: any) {
+              console.log(error);
+              cr.setStatus(false);
+              cr.setExtra(error.message);
+              cr.setValidation({
+                code: error.validationCode ?? ValidationType.SRV_SIDE_EXC,
+                type: error.validationType ?? ValidationStatus.ERROR,
+                msgParams: error.validationMsgParams ?? null,
+              });
+            }
+        
+            return cr;
+          
+    }
+  }

@@ -10,18 +10,21 @@ import { ValidationStatus } from "../../../enum/validation-status";
 import { LoginUserInfo } from "../../../dto/system/login-user";
 import { AppDataSource } from "../../../configuration/database-configuration";
 import { Repository } from "typeorm";
-import { Product } from "../../../entity/Product";
 import { User } from "../../../entity/User";
 import { UserDao } from "../../../dao/userDao";
 import { UserDaoImpl } from "../../../dao/impl/userDaoImpl";
 import { SearchDto } from "../../../dto/search-dto";
-import { UserResponse } from "../../../dto/system/userResponse-dto";
+import bcrypt from "bcryptjs";
 import { UserResponseDTO } from "../../../dto/user-dtos/userResponse-dto";
+import { loadRequestDTO } from "../../../dto/loadRequest-dto";
 
 export class StaffServiceImpl implements StaffService {
 
 
     private userDao: UserDao = new UserDaoImpl();
+
+    //-----------------------STAFF MANAGE--------------------------
+
     async manage(userInfo: LoginUserInfo, manageStaffDto: ManageStaffRequest): Promise<CommonResponse> {
         const cr: CommonResponse = new CommonResponse();
 
@@ -37,9 +40,19 @@ export class StaffServiceImpl implements StaffService {
             await AppDataSource.transaction(async (transactionManager) => {
                 const userRepo: Repository<User> = transactionManager.getRepository(User);
 
+                const existing = await this.userDao.findByEmail(manageStaffDto.getEmail());
+
+                if (existing) {
+                    throw new ValidationExceptionV2(CodesRes.duplicateRecord, "User Already Exists!", { code: ValidationType.USER_ALREADY_EXIST, type: ValidationStatus.WARNING, msgParams: null });
+                }
+
+                const hashedPassword = await bcrypt.hash(manageStaffDto.getPassword(), 10);
+                manageStaffDto.setPassword(hashedPassword);
+
+
                 let user: User | null = null;
                 if (manageStaffDto.isIsNew()) {
-                    user = await this.userDao.addStaff(manageStaffDto, userRepo);
+                    user = await this.userDao.createUser(manageStaffDto, userRepo);
                 }
                 else if (manageStaffDto.isIsUpdate()) {
                     if (!manageStaffDto.getUserId()) {
@@ -115,48 +128,84 @@ export class StaffServiceImpl implements StaffService {
 
         return cr;
     }
-    async staffList(userInfo: LoginUserInfo, paginationRequest: SearchDto): Promise<CommonResponse> {
-          const cr: CommonResponse = new CommonResponse();
-            try {
-              if (userInfo.getRole() !== UserRole.ADMIN) {
-                throw new ValidationExceptionV2(
-                  CodesRes.validationError,
-                  "Invalid User",
-                  { code: ValidationType.INVALID_USER, type: ValidationStatus.WARNING, msgParams: null }
-        
-                );
-              }
-              const users = await this.userDao.listStaff(paginationRequest);
-              const userResponses = await Promise.all(
-                users.map(user => this.UserResponse(user))
-              )
 
-        
-              cr.setStatus(true);
-              cr.setExtra(userResponses);
-        
+    //-------------------------------STAFF LIST------------------------
+
+    async staffList(userInfo: LoginUserInfo, paginationRequest: SearchDto): Promise<CommonResponse> {
+        const cr: CommonResponse = new CommonResponse();
+        try {
+            if (userInfo.getRole() !== UserRole.ADMIN) {
+                throw new ValidationExceptionV2(
+                    CodesRes.validationError,
+                    "Invalid User",
+                    { code: ValidationType.INVALID_USER, type: ValidationStatus.WARNING, msgParams: null }
+
+                );
             }
-            catch (error: any) {
-              console.log(error);
-              cr.setStatus(false);
-              cr.setExtra(error.message);
-              cr.setValidation({
+            const users = await this.userDao.listStaff(paginationRequest);
+            const userResponses = await Promise.all(
+                users.map(user => this.UserResponse(user))
+            )
+
+
+            cr.setStatus(true);
+            cr.setExtra(userResponses);
+
+        }
+        catch (error: any) {
+            console.log(error);
+            cr.setStatus(false);
+            cr.setExtra(error.message);
+            cr.setValidation({
                 code: error.validationCode ?? ValidationType.SRV_SIDE_EXC,
                 type: error.validationType ?? ValidationStatus.ERROR,
                 msgParams: error.validationMsgParams ?? null,
-              });
-            }
-        
-            return cr;
-          }
-    
-     private async UserResponse(user:User):Promise<UserResponseDTO>{
-        let userData=new UserResponseDTO();
+            });
+        }
+
+        return cr;
+    }
+
+    private async UserResponse(user: User): Promise<UserResponseDTO> {
+        let userData = new UserResponseDTO();
         userData.setUserId(user.userId);
         userData.setName(user.name);
         userData.setEmail(user.email);
 
 
         return userData;
-     }
+    }
+
+    //--------------------LOAD USER-------------------------------
+
+    async loadUser(loadRequest: loadRequestDTO, userInfo: LoginUserInfo): Promise<CommonResponse> {
+        const cr: CommonResponse = new CommonResponse()
+        try {
+            if (userInfo.getRole() !== UserRole.STAFF) {
+                throw new ValidationExceptionV2(
+                    CodesRes.validationError,
+                    "Invalid User",
+                    { code: ValidationType.INVALID_USER, type: ValidationStatus.WARNING, msgParams: null }
+                );
+            }
+            const user = await this.userDao.findUser(loadRequest);
+
+            cr.setStatus(true);
+            if (user) {
+                cr.setExtra(this.UserResponse(user));
+            }
+        } catch (error: any) {
+            console.log(error);
+            cr.setStatus(false);
+            cr.setExtra(error.message);
+            cr.setValidation({
+                code: error.validationCode ?? ValidationType.SRV_SIDE_EXC,
+                type: error.validationType ?? ValidationStatus.ERROR,
+                msgParams: error.validationMsgParams ?? null,
+            });
+        }
+
+        return cr;
+
+    }
 }
