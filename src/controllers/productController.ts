@@ -6,6 +6,7 @@ import { ProductService } from "../services/product-service/ProductService";
 import { ProductServiceImpl } from "../services/product-service/Impl/ProductServiceImpl";
 import { LoginUserInfo } from "../dto/system/login-user";
 import { LoginUserInfoSup } from "../support/login-user-info-sup";
+import { SearchDto } from "../dto/search-dto";
 
 
 const productService: ProductService = new ProductServiceImpl();
@@ -45,6 +46,8 @@ exports.productList = async (req: express.Request, res: express.Response, next: 
   } catch (err) {
     next(err);
   }
+
+
 }
 
 

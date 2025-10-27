@@ -11,6 +11,7 @@ import { User } from "../entity/User";
 import { UserDao } from "../dao/userDao";
 import { UserDaoImpl } from "../dao/impl/userDaoImpl";
 
+
 const authService: AuthService = new AuthServiceImpl();
 let jwtHelper: JwtHelper = new JwtHelper();
 let userDao: UserDao = new UserDaoImpl();
@@ -83,6 +84,10 @@ exports.refresh = async (req: express.Request, res: express.Response, next: expr
   } catch (error) {
     res.sendStatus(401);
   }
+
+
+
+  
 };
 
 

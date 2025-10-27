@@ -1,6 +1,6 @@
 import { CustomerResponseDTO } from "../customer-dto/customerResponse-dto";
 import { OrderItemResponseDTO } from "../orderItem-dto/orderIteamResponse-dto";
-import { UserResponse } from "../user-dtos/userReseponse-dto";
+import { UserResponseDTO } from "../user-dtos/userResponse-dto";
 
 export class OrderResponseDTO {
     private orderId: number;
@@ -10,7 +10,7 @@ export class OrderResponseDTO {
     private placedAt: Date;
     private customer: CustomerResponseDTO;
     private items: OrderItemResponseDTO[];
-    private user: UserResponse;
+    private user: UserResponseDTO;
 
 
     public getOrderId(): number {
@@ -61,11 +61,11 @@ export class OrderResponseDTO {
         this.items = items;
     }
 
-    public getUser(): UserResponse {
+    public getUser(): UserResponseDTO {
         return this.user;
     }
 
-    public setUser(user: UserResponse): void {
+    public setUser(user: UserResponseDTO): void {
         this.user = user;
     }
     public getOrderNumber(): string {

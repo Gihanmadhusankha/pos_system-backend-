@@ -27,9 +27,9 @@ import { OrderItemDTO } from "../../../dto/orderItem-dto/orderItem-dto";
 import { OrderResponseDTO } from "../../../dto/order-dto/orderResponse-dto";
 import { CustomerResponseDTO } from "../../../dto/customer-dto/customerResponse-dto";
 import { OrderItemResponseDTO } from "../../../dto/orderItem-dto/orderIteamResponse-dto";
-import { UserResponse } from "../../../dto/user-dtos/userReseponse-dto";
 import { LoginUserInfo } from "../../../dto/system/login-user";
 import { UserRole } from "../../../enum/userRole";
+import { UserResponseDTO } from "../../../dto/user-dtos/userResponse-dto";
 
 
 export class OrderServiceImpl implements OrderService {
@@ -197,7 +197,7 @@ export class OrderServiceImpl implements OrderService {
     });
     orderData.setItems(itemsResponse);
 
-    const userResponse: UserResponse = new UserResponse();
+    const userResponse: UserResponseDTO = new UserResponseDTO();
     userResponse.setName(order.user.name);
     orderData.setUser(userResponse);
 
