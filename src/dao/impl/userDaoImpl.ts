@@ -1,4 +1,4 @@
-import { Repository } from "typeorm";
+import { Brackets, Repository } from "typeorm";
 import { AppDataSource } from "../../configuration/database-configuration";
 import { User } from "../../entity/User";
 import { UserDao } from "../userDao";
@@ -53,17 +53,21 @@ export class UserDaoImpl implements UserDao {
 
         return await userRepo.save(userEntity);
     }
-    async listStaff(paginationDto: SearchDto): Promise<User[]> {
+    async listStaff(paginationDto: SearchDto): Promise<{list:User[];count:number}> {
         const userRepo: Repository<User> = AppDataSource.getRepository(User);
 
 
         let query = userRepo.createQueryBuilder("user")
-            .where("user.status = :status", { status: Status.ONLINE })
-            .andWhere("user.role = :role", { role: UserRole.STAFF });
+            .where("user.role = :role", { role: UserRole.STAFF })
+            .andWhere("user.status = :status", { status: Status.ONLINE })
+
 
         if (paginationDto.getSearchText()) {
             const searchTerm = paginationDto.getSearchText().trim().toLowerCase();
-            query.andWhere("LOWER(user.name) LIKE :search", { search: `%${searchTerm}%` });
+            query.andWhere(new Brackets((and) => {
+                and.orWhere("LOWER(user.name)  LIKE :search", { search: `%${searchTerm}%` });
+                and.orWhere("LOWER(user.email)  LIKE :email", { email: `%${searchTerm}%` });
+            }));
         }
 
         if (paginationDto.isIsReqPagination()) {
@@ -71,9 +75,11 @@ export class UserDaoImpl implements UserDao {
             query.take(paginationDto.getMaxResult());
         }
 
-        return await query.getMany();
+          const [list, count] = await query.getManyAndCount();
+
+        return { list, count };
     }
-    async updateUser(manageStaffDto: ManageStaffRequest , userRepo: Repository<User>): Promise<User> {
+    async updateUser(manageStaffDto: ManageStaffRequest, userRepo: Repository<User>): Promise<User> {
         const user = await userRepo.findOne({ where: { userId: manageStaffDto.getUserId() } });
 
         if (!user) {
@@ -92,9 +98,9 @@ export class UserDaoImpl implements UserDao {
     }
 
 
-    async removeUser(userId: number, userRepo: Repository<User>): Promise<void> {
+    async removeUser(manageStaffDto:ManageStaffRequest, userRepo: Repository<User>): Promise<void> {
 
-        const user = await userRepo.findOne({ where: { userId } });
+        const user = await userRepo.findOne({ where: {userId: manageStaffDto.getUserId() } });
         if (!user) {
             throw new ValidationExceptionV2(CodesRes.notFoundException, "user not found", { code: ValidationType.USER_ID_NOT_EXIST, type: ValidationStatus.WARNING, msgParams: null });
         }
@@ -102,26 +108,28 @@ export class UserDaoImpl implements UserDao {
         user.status = Status.OFFLINE;
         await userRepo.save(user);
     }
-    async findUser(loadRequest: loadRequestDTO): Promise<User|null> {
-          const userRepo: Repository<User> = AppDataSource.getRepository(User);
-         
-             const query = userRepo.createQueryBuilder("user");
-         
-             if (loadRequest.getId()) {
-                 query.where("user.userId = :id", { id: loadRequest.getId() });
-             }
-         
-             if (loadRequest.getName()) {
-                 if (loadRequest.getId()) {
-                     query.orWhere("user.name = :name", { name: loadRequest.getName() });
-                 } else {
-                     query.where("user.name = :name", { name: loadRequest.getName() });
-                 }
-             }
-         
-             const customer = await query.getOne();
-             return customer;
-         }
-        
-    
+    async findUser(loadRequest: loadRequestDTO): Promise<User | null> {
+        const userRepo: Repository<User> = AppDataSource.getRepository(User);
+
+        const query = userRepo.createQueryBuilder("user");
+
+        if (loadRequest.getId()) {
+            query.where("user.userId = :id", { id: loadRequest.getId() });
+        }
+
+        if (loadRequest.getSearchName()) {
+            const searchTerm = loadRequest.getSearchName().trim().toLowerCase();
+            if (loadRequest.getId()) {
+                query.orWhere("LOWER(user.name) LIKE :search", { search: `%${searchTerm}%` });
+            } else {
+                query.orWhere("LOWER(user.name) LIKE :search", { search: `%${searchTerm}%` });
+
+            }
+        }
+
+        const customer = await query.getOne();
+        return customer;
+    }
+
+
 }

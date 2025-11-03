@@ -4,7 +4,6 @@ import { CrudDto } from "../crud-dto";
 export class ManagaProductRequest extends CrudDto {
 
     private name: string;
-    private description: string;
     private price: number;
     private stock: number;
     private productId: number;
@@ -19,14 +18,7 @@ export class ManagaProductRequest extends CrudDto {
         this.name = name;
     }
 
-    public getDescription(): string {
-        return this.description;
-    }
-
-    public setDescription(description: string): void {
-        this.description = description;
-    }
-
+   
     public getPrice(): number {
         return this.price;
     }
@@ -61,7 +53,6 @@ export class ManagaProductRequest extends CrudDto {
 
     public fillViaRequest(body: any) {
         this.name = body.name;
-        this.description = body.description;
         this.price = body.price;
         this.stock = body.stock;
         this.productId = body.productId;

@@ -17,7 +17,6 @@ export class ProductDaoImpl implements ProductDao {
 
     let productEntity: Product = new Product();
     productEntity.name = manageProductRequest.getName();
-    productEntity.description = manageProductRequest.getDescription();
     productEntity.price = manageProductRequest.getPrice();
     productEntity.stock = manageProductRequest.getStock();
     productEntity.IsActive = manageProductRequest.isIsActive();
@@ -45,7 +44,6 @@ export class ProductDaoImpl implements ProductDao {
 
 
     product.name = manageProductRequest.getName();
-    product.description = manageProductRequest.getDescription();
     product.price = manageProductRequest.getPrice();
     product.stock = manageProductRequest.getStock();
     product.IsActive = manageProductRequest.isIsActive();
@@ -68,23 +66,30 @@ export class ProductDaoImpl implements ProductDao {
   }
 
 
-  async listProduct(paginationDto: CommonPaginationDto): Promise<Product[]> {
+  async listProduct(paginationDto: CommonPaginationDto): Promise<{list:Product[];count:number}> {
     const productRepo: Repository<Product> = AppDataSource.getRepository(Product);
 
     let query = productRepo.createQueryBuilder("product")
-       .where("product.status = :status", { status: Status.ONLINE });
+      .where("product.status = :status", { status: Status.ONLINE })
+      
+      
     if (paginationDto.getSearchText()) {
       const searchTerm = paginationDto.getSearchText().trim().toLowerCase();
       query.andWhere("LOWER(product.name) LIKE :search", { search: `%${searchTerm}%` });
     }
-    query.andWhere("product.IsActive = :active", { active: paginationDto.isStatus() });
+   if (paginationDto.isStatus() !== null && paginationDto.isStatus() !== undefined) {
+  query.andWhere("product.IsActive = :active", { active: paginationDto.isStatus() });
+}
+
 
     if (paginationDto.isIsReqPagination()) {
       query.skip(paginationDto.getStartIndex());
       query.take(paginationDto.getMaxResult());
     }
 
-    return await query.getMany();
+     const [list, count] = await query.getManyAndCount();
+
+        return { list, count };
   }
 
 
@@ -93,27 +98,39 @@ export class ProductDaoImpl implements ProductDao {
   }
 
 
-  async findProduct(loadRequest: loadRequestDTO): Promise<Product |null> {
-      const productRepo: Repository<Product> = AppDataSource.getRepository(Product);
+ async findProducts(loadRequest: loadRequestDTO): Promise<Product[]> {
+  const productRepo: Repository<Product> = AppDataSource.getRepository(Product);
+
+  const query = productRepo.createQueryBuilder("product");
+
+  query.where('product.status = :status',{status:Status.ONLINE})
+  query.andWhere('product.IsActive = :isActive', { isActive: true })
   
-      const query = productRepo.createQueryBuilder("product");
+
   
-      if (loadRequest.getId()) {
-          query.where("product.productId = :id", { id: loadRequest.getId() });
-      }
-  
-      if (loadRequest.getName()) {
-          if (loadRequest.getId()) {
-              query.orWhere("product.name = :name", { name: loadRequest.getName() });
-          } else {
-              query.where("product.name = :name", { name: loadRequest.getName() });
-          }
-      }
-  
-      const customer = await query.getOne();
-      return customer;
+  if (loadRequest.getId()) {
+    query.andWhere("product.productId = :id", { id: loadRequest.getId() });
   }
+
+  
+  if (loadRequest.getSearchName()) {
+    console.log(loadRequest.getSearchName())
+    const searchTerm = loadRequest.getSearchName().trim().toLowerCase();
+    if(searchTerm!==""){
+      query.andWhere("LOWER(product.name) LIKE :search", { search: `%${searchTerm}%` });
+    }
+  }
+
+  query.orderBy('product.name', 'ASC');
+  
+  // Limit results
+  if (!loadRequest.getId() && !loadRequest.getSearchName()) {
+    query.take(50); 
+  } else {
+    query.take(10);
+  }
+
+  const products = await query.getMany();
+  return products;
 }
-
-
-
+}

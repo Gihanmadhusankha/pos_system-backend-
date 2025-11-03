@@ -10,6 +10,8 @@ router.post("/orderId", orderController.getOrderById);
 router.post("/list",orderController.getOrderList );
 router.post("/paid",orderController. paidOrder);
 router.post("/cancel", orderController.cancelOrder);
+router.post("/load", orderController.loadOrder);
+
 
 
 module.exports = router;

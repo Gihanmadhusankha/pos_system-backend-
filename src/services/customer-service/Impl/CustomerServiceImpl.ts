@@ -15,6 +15,7 @@ import { CommonPaginationDto } from "../../../dto/commonPagination-dto";
 import { UserRole } from "../../../enum/userRole";
 import { LoginUserInfo } from "../../../dto/system/login-user";
 import { loadRequestDTO } from "../../../dto/loadRequest-dto";
+import { count } from "console";
 
 export class CustomerServiceImpl implements CustomerService {
   private customerDao: CustomerDao = new CustomerDaoImpl();
@@ -40,7 +41,7 @@ export class CustomerServiceImpl implements CustomerService {
       await AppDataSource.transaction(async (transactionManager) => {
         const customerRepo: Repository<Customer> = transactionManager.getRepository(Customer);
 
-        // Update existing customer
+        // --- Update existing customer ---
         if (manageCustomer.isIsUpdate()) {
           if (!manageCustomer.getCustomerId()) {
             throw new ValidationExceptionV2(
@@ -62,7 +63,7 @@ export class CustomerServiceImpl implements CustomerService {
           customer = await this.customerDao.updateCustomer(manageCustomer, customerRepo);
         }
 
-        // Delete customer
+        // --- Delete customer ---
         else if (manageCustomer.isIsDelete()) {
           if (!manageCustomer.getCustomerId()) {
             throw new ValidationExceptionV2(
@@ -84,7 +85,12 @@ export class CustomerServiceImpl implements CustomerService {
           await this.customerDao.removeCustomer(manageCustomer.getCustomerId(), customerRepo);
         }
 
-        // Invalid operation
+        // --- Create new customer ---
+        else if (manageCustomer.isIsNew()) {
+          customer = await this.customerDao.createCustomer(manageCustomer, customerRepo);
+        }
+
+        // --- Invalid operation ---
         else {
           throw new ValidationExceptionV2(
             CodesRes.notFoundException,
@@ -111,7 +117,6 @@ export class CustomerServiceImpl implements CustomerService {
 
     return cr;
   }
-
   //---------------------CUSTOMER LIST------------------------------------
 
   async customerList(
@@ -128,9 +133,10 @@ export class CustomerServiceImpl implements CustomerService {
         );
       }
 
-      const customers = await this.customerDao.listCustomer(paginationRequest);
+      const {list,count} = await this.customerDao.listCustomer(paginationRequest);
       cr.setStatus(true);
-      cr.setExtra(customers);
+      cr.setExtra(list);
+      cr.setCount(count);
     } catch (error: any) {
       console.log(error);
       cr.setStatus(false);
@@ -160,12 +166,16 @@ export class CustomerServiceImpl implements CustomerService {
         );
       }
 
-      const customer = await this.customerDao.findCustomer(loadRequest);
+      const customers = await this.customerDao.findCustomers(loadRequest);
 
       cr.setStatus(true);
-      if (customer) {
-        cr.setExtra(this.customerResponse(customer));
+      if (customers && customers.length>0) {
+        const customerResponses=await Promise.all(
+          customers.map(customer=>this.customerResponse(customer))
+        )
+        cr.setExtra(customerResponses);
       }
+    
     } catch (error: any) {
       console.log(error);
       cr.setStatus(false);

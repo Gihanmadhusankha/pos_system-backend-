@@ -34,84 +34,96 @@ export class StaffServiceImpl implements StaffService {
                     CodesRes.validationError,
                     "Invalid User",
                     { code: ValidationType.INVALID_USER, type: ValidationStatus.WARNING, msgParams: null }
-
                 );
             }
+
             await AppDataSource.transaction(async (transactionManager) => {
                 const userRepo: Repository<User> = transactionManager.getRepository(User);
 
-                const existing = await this.userDao.findByEmail(manageStaffDto.getEmail());
-
-                if (existing) {
-                    throw new ValidationExceptionV2(CodesRes.duplicateRecord, "User Already Exists!", { code: ValidationType.USER_ALREADY_EXIST, type: ValidationStatus.WARNING, msgParams: null });
+                // Check duplicate email only for new users
+                if (manageStaffDto.isIsNew()) {
+                    const existing = await this.userDao.findByEmail(manageStaffDto.getEmail());
+                    if (existing) {
+                        throw new ValidationExceptionV2(
+                            CodesRes.duplicateRecord,
+                            "User Already Exists!",
+                            { code: ValidationType.USER_ALREADY_EXIST, type: ValidationStatus.WARNING, msgParams: null }
+                        );
+                    }
                 }
-
-                const hashedPassword = await bcrypt.hash(manageStaffDto.getPassword(), 10);
-                manageStaffDto.setPassword(hashedPassword);
-
 
                 let user: User | null = null;
+
+                // CREATE
                 if (manageStaffDto.isIsNew()) {
+                    // Hash password
+                    const hashedPassword = await bcrypt.hash(manageStaffDto.getPassword(), 10);
+                    manageStaffDto.setPassword(hashedPassword);
+
                     user = await this.userDao.createUser(manageStaffDto, userRepo);
                 }
+
+                // UPDATE
                 else if (manageStaffDto.isIsUpdate()) {
                     if (!manageStaffDto.getUserId()) {
                         throw new ValidationExceptionV2(
                             CodesRes.notFoundException,
-                            "user not found",
+                            "User ID is required for update",
                             { code: ValidationType.USER_ID_NOT_EXIST, type: ValidationStatus.WARNING, msgParams: null }
                         );
                     }
-                    const existingUser = await this.userDao.findById(manageStaffDto.getUserId());
-                    if (!existingUser) {
-                        if (!manageStaffDto.getUserId()) {
-                            throw new ValidationExceptionV2(
-                                CodesRes.notFoundException,
-                                "user not found",
-                                { code: ValidationType.USER_ID_NOT_EXIST, type: ValidationStatus.WARNING, msgParams: null }
-                            );
 
-                        }
-
+                    user = await this.userDao.findById(manageStaffDto.getUserId());
+                    if (!user) {
+                        throw new ValidationExceptionV2(
+                            CodesRes.notFoundException,
+                            "User not found",
+                            { code: ValidationType.USER_ID_NOT_EXIST, type: ValidationStatus.WARNING, msgParams: null }
+                        );
                     }
+
+                    // Only hash password if provided
+                    if (manageStaffDto.getPassword()) {
+                        const hashedPassword = await bcrypt.hash(manageStaffDto.getPassword(), 10);
+                        manageStaffDto.setPassword(hashedPassword);
+                    } else {
+                        manageStaffDto.setPassword(user.password); // keep old password
+                    }
+
                     user = await this.userDao.updateUser(manageStaffDto, userRepo);
+                }
 
-
-
-                } else if (manageStaffDto.isIsDelete()) {
+                // DELETE (soft delete)
+                else if (manageStaffDto.isIsDelete()) {
                     if (!manageStaffDto.getUserId()) {
                         throw new ValidationExceptionV2(
                             CodesRes.notFoundException,
-                            "user not found",
+                            "User ID is required for delete",
                             { code: ValidationType.USER_ID_NOT_EXIST, type: ValidationStatus.WARNING, msgParams: null }
                         );
                     }
-                    const existingUser = await this.userDao.findById(manageStaffDto.getUserId());
-                    if (!existingUser) {
-                        if (!manageStaffDto.getUserId()) {
-                            throw new ValidationExceptionV2(
-                                CodesRes.notFoundException,
-                                "user not found",
-                                { code: ValidationType.USER_ID_NOT_EXIST, type: ValidationStatus.WARNING, msgParams: null }
-                            );
 
-                        }
-
+                    user = await this.userDao.findById(manageStaffDto.getUserId());
+                    if (!user) {
+                        throw new ValidationExceptionV2(
+                            CodesRes.notFoundException,
+                            "User not found",
+                            { code: ValidationType.USER_ID_NOT_EXIST, type: ValidationStatus.WARNING, msgParams: null }
+                        );
                     }
-                    await this.userDao.removeUser(manageStaffDto.getUserId(), userRepo);
 
+                    await this.userDao.removeUser(manageStaffDto, userRepo); // sets status = OFFLINE
                 }
+
                 else {
                     throw new ValidationExceptionV2(
                         CodesRes.notFoundException,
-                        "Invalid  operation",
+                        "Invalid operation",
                         { code: ValidationType.INVALID_OPERATION, type: ValidationStatus.WARNING, msgParams: null }
                     );
                 }
 
-
-                cr.setExtra("user manage successfully");
-
+                cr.setExtra("User managed successfully");
             });
 
             cr.setStatus(true);
@@ -129,6 +141,7 @@ export class StaffServiceImpl implements StaffService {
         return cr;
     }
 
+
     //-------------------------------STAFF LIST------------------------
 
     async staffList(userInfo: LoginUserInfo, paginationRequest: SearchDto): Promise<CommonResponse> {
@@ -141,15 +154,17 @@ export class StaffServiceImpl implements StaffService {
                     { code: ValidationType.INVALID_USER, type: ValidationStatus.WARNING, msgParams: null }
 
                 );
+                
             }
-            const users = await this.userDao.listStaff(paginationRequest);
+            const {list,count} = await this.userDao.listStaff(paginationRequest);
             const userResponses = await Promise.all(
-                users.map(user => this.UserResponse(user))
+                list.map(user => this.UserResponse(user))
             )
 
 
             cr.setStatus(true);
             cr.setExtra(userResponses);
+            cr.setCount(count);
 
         }
         catch (error: any) {

@@ -55,6 +55,8 @@ exports.productList = async (req: express.Request, res: express.Response, next: 
        let userInfo: LoginUserInfo = LoginUserInfoSup.getLoginUserInfoFromReq(req);
   
        let loadRequest:loadRequestDTO=new  loadRequestDTO();
+       loadRequest.fillViaRequest(req.body);
+       
        const response:CommonResponse=await productService.loadProduct(loadRequest);
        res.send(response);
   

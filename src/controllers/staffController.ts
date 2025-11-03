@@ -51,7 +51,7 @@ exports.staffList = async (req: express.Request, res: express.Response, next: ex
     }
 }
 //-------------------------LOAD STAFF-----------------------------
- exports.loadProduct=async(req:express.Request,res:express.Response,next:NextFunction)=>{
+ exports.loadUser=async(req:express.Request,res:express.Response,next:NextFunction)=>{
    try{
        let userInfo: LoginUserInfo = LoginUserInfoSup.getLoginUserInfoFromReq(req);
   

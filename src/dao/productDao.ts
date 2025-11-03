@@ -10,9 +10,9 @@ export interface ProductDao {
   findByProductId(productId: number): Promise<Product | null>;
   updateProduct(manageProductRequest: ManagaProductRequest, productRepo: Repository<Product>): Promise<Product>;
   removeProduct(productId: number, productRepo: Repository<Product>): Promise<void>;
-  listProduct(paginationDto: CommonPaginationDto): Promise<Product[]>;
+  listProduct(paginationDto: CommonPaginationDto): Promise<{list:Product[];count:number}>;
   save(product: Product, productRepo: Repository<Product>): Promise<Product>;
-   findProduct(loadRequest:loadRequestDTO):Promise<Product|null>;
+   findProducts(loadRequest:loadRequestDTO):Promise<Product[]|null>;
   
 
 }

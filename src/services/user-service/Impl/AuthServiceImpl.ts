@@ -29,6 +29,7 @@ export class AuthServiceImpl implements AuthService {
         try {
             await AppDataSource.transaction(async (transactionManager) => {
                 let userRepo: Repository<User> = transactionManager.getRepository(User);
+                
                 const existing = await this.userDao.findByEmail(registerRequestDto.getEmail());
 
                 if (existing) {

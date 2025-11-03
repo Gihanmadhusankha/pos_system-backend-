@@ -91,7 +91,7 @@ exports.cancelOrder = async (req: Request, res: Response, next: NextFunction) =>
   }
 };
 //-------------------------LOAD ORDERS-----------------------------
- exports.loadProduct=async(req:express.Request,res:express.Response,next:NextFunction)=>{
+ exports.loadOrder=async(req:express.Request,res:express.Response,next:NextFunction)=>{
    try{
        let userInfo: LoginUserInfo = LoginUserInfoSup.getLoginUserInfoFromReq(req);
   

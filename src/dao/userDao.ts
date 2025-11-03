@@ -10,9 +10,9 @@ export interface UserDao {
     createUser(registerRequestDto: RegisterRequestDto | ManageStaffRequest, userRepo: Repository<User>): Promise<User>;
     findById(userId: number): Promise<User | null>;
     addStaff(manageStaffDto: ManageStaffRequest, userRepo: Repository<User>): Promise<User>;
-    listStaff(paginationDto: SearchDto): Promise<User[]>;
+    listStaff(paginationDto: SearchDto): Promise<{list:User[];count:number}>;
     updateUser(manageStaffDto: ManageStaffRequest, userRepo: Repository<User>): Promise<User>;
-    removeUser(userId: number, userRepo: Repository<User>): Promise<void>;
+    removeUser(manageStaffDto: ManageStaffRequest, userRepo: Repository<User>): Promise<void>;
     findUser(loadRequest: loadRequestDTO): Promise<User |null>;
 
 }

@@ -9,5 +9,7 @@ router.use(auth);
 
 router.post("/manage",staffController.manageStaff);
 router.post("/list",staffController.staffList);
+router.post("/load",staffController.loadUser);
+
 
 module.exports = router;

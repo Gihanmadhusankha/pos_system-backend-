@@ -13,8 +13,7 @@ export class Product {
     @Column({ length: 100, name: "product_name", nullable: false })
     name!: string;
 
-    @Column({ length: 100, name: "product_description", nullable: false })
-    description!: string;
+    
 
     @Column({ type: "int", nullable: false, default: 0 })
     price!: number;

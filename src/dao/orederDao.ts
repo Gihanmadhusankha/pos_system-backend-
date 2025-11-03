@@ -9,7 +9,7 @@ import { Product } from "../entity/Product";
 export interface OrderDao {
     createOrder(order: CreateOrderDTO, orderRepo: Repository<Order>): Promise<Order>;
     findOrderById(orderId: number): Promise<Order | null>;
-    listOrder(paginationDto: CommonPaginationDto): Promise<Order[]>;
+    listOrder(paginationDto: CommonPaginationDto,userId:number): Promise<{list:Order[] ;count:number}>;
     save(order: Order, orderRepo: Repository<Order>): Promise<Order>;
     findOrder(loadRequest: loadRequestDTO): Promise<Order |null>;
 };

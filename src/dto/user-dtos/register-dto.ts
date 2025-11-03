@@ -1,11 +1,13 @@
 import { UserRole } from "../../enum/userRole";
 
-export class RegisterRequestDto{
+export class RegisterRequestDto {
+
     private name:string;
     private email:string;
     private password:string;
     private role:UserRole.STAFF;
-
+    
+     
 
     public getName(): string {
         return this.name;
@@ -41,10 +43,12 @@ export class RegisterRequestDto{
 
 
     public fillViaRequest(body:any){
+    
         this.name=body.name;
         this.email=body.email;
         this.password=body.password;
         this.role=body.role;
+        
     }
 
     

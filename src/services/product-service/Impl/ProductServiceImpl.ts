@@ -41,7 +41,7 @@ export class ProductServiceImpl implements ProductService {
 
       await AppDataSource.transaction(async (transactionManager) => {
         const productRepo: Repository<Product> = transactionManager.getRepository(Product);
-        let product: Product | null = null;//product kiyala dekak define karala
+        let product: Product | null = null;
 
         // Create Product
         if (manageProductRequest.isIsNew()) {
@@ -90,6 +90,7 @@ export class ProductServiceImpl implements ProductService {
           }
 
           await this.productDao.removeProduct(manageProductRequest.getProductId(), productRepo);
+        
         }
 
         // Invalid operation
@@ -101,8 +102,11 @@ export class ProductServiceImpl implements ProductService {
           );
         }
 
-        // Prepare response data only if product exists (create/update)
+        if(product){
         cr.setExtra(await this.ProductResponse(product));
+        }else{
+           cr.setExtra("Product deleted successfully");
+        }
 
       });
 
@@ -146,14 +150,15 @@ export class ProductServiceImpl implements ProductService {
 
         );
       }
-      const products = await this.productDao.listProduct(paginationRequest);
+      const {list,count} = await this.productDao.listProduct(paginationRequest);
       const productResponses = await Promise.all(
-        products.map(product => this.ProductResponse(product))
+        list.map(product => this.ProductResponse(product))
       )
 
 
       cr.setStatus(true);
       cr.setExtra(productResponses);
+      cr.setCount(count);
 
     }
     catch (error: any) {
@@ -169,6 +174,7 @@ export class ProductServiceImpl implements ProductService {
 
     return cr;
   }
+  //--------------------STOCK LIST----------------------------
 
   async stockList(
     userInfo: LoginUserInfo,
@@ -185,16 +191,25 @@ export class ProductServiceImpl implements ProductService {
           { code: ValidationType.INVALID_USER, type: ValidationStatus.WARNING, msgParams: null }
         );
       }
+      if(paginationRequest.getFromDate()>(paginationRequest.getToDate())){
+        throw new ValidationExceptionV2(
+          CodesRes.validationError,
+          "Invalid Date",
+            { code: ValidationType.INVALID_DATE, type: ValidationStatus.WARNING, msgParams: null }
+
+        )
+      }
 
       // Fetch stock movements
-      const stocks: StockMovement[] = await this.stockMovementDao.liststock(paginationRequest);
+      const {list,count} = await this.stockMovementDao.liststock(paginationRequest);
 
       // Map to StockResponse
-      const stockResponses: StockResponse[] = stocks.map(stock => this.StockResponse(stock));
-      console.log(stocks);
+      const stockResponses: StockResponse[] = list.map(stock => this.StockResponse(stock));
+      
 
       cr.setStatus(true);
       cr.setExtra(stockResponses);
+      cr.setCount(count);
     } catch (error: any) {
       console.error(error);
       cr.setStatus(false);
@@ -215,32 +230,39 @@ export class ProductServiceImpl implements ProductService {
     stockData.setProductName(stock.product?.name ?? "");
     stockData.setQuantity(stock.quantity);
     stockData.setDate(stock.created_at);
+    stockData.setType(stock.movementType);
 
     return stockData;
 
   }
   //----------------------LOAD PRODUCTS -------------------
   async loadProduct(loadRequest: loadRequestDTO): Promise<CommonResponse> {
-       const cr: CommonResponse = new CommonResponse()
-        try{
-            const product = await this.productDao.findProduct(loadRequest);
-      
-            cr.setStatus(true);
-            if (product) {
-              cr.setExtra(this.ProductResponse(product));
-            }
-          } catch (error: any) {
-            console.log(error);
-            cr.setStatus(false);
-            cr.setExtra(error.message);
-            cr.setValidation({
-              code: error.validationCode ?? ValidationType.SRV_SIDE_EXC,
-              type: error.validationType ?? ValidationStatus.ERROR,
-              msgParams: error.validationMsgParams ?? null,
-            });
-          }
-      
-          return cr;
-        
+    const cr: CommonResponse = new CommonResponse()
+    try {
+      const products = await this.productDao.findProducts(loadRequest);
+
+      cr.setStatus(true);
+      if (products && products.length > 0) {
+
+        const productResponses = await Promise.all(
+          products.map(product => this.ProductResponse(product))
+        );
+        cr.setExtra(productResponses);
+      } else {
+        cr.setExtra([]);
+      }
+    } catch (error: any) {
+      console.log(error);
+      cr.setStatus(false);
+      cr.setExtra(error.message);
+      cr.setValidation({
+        code: error.validationCode ?? ValidationType.SRV_SIDE_EXC,
+        type: error.validationType ?? ValidationStatus.ERROR,
+        msgParams: error.validationMsgParams ?? null,
+      });
+    }
+
+    return cr;
+
   }
 }

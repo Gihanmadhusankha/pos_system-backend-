@@ -1,5 +1,5 @@
 
-import { Repository } from "typeorm";
+import { Brackets, Repository } from "typeorm";
 import { AppDataSource } from "../../configuration/database-configuration";
 import { ManageCustomerRequest } from "../../dto/customer-dto/manageCustomerRequest-dto";
 import { Customer } from "../../entity/Customer";
@@ -80,7 +80,7 @@ export class CustomerDaoImpl implements CustomerDao {
   }
 
 
-  async listCustomer(paginationDto: CommonPaginationDto): Promise<Customer[]> {
+  async listCustomer(paginationDto: CommonPaginationDto): Promise<{list:Customer[];count:number}> {
 
     const customerRepo: Repository<Customer> = AppDataSource.getRepository(Customer);
 
@@ -97,27 +97,37 @@ export class CustomerDaoImpl implements CustomerDao {
       query.take(paginationDto.getMaxResult());
     }
 
-    return await query.getMany();
+      const [list, count] = await query.getManyAndCount();
+
+        return { list, count };
   }
-  async findCustomer(loadRequest: loadRequestDTO): Promise<Customer> {
+  async findCustomers(loadRequest: loadRequestDTO): Promise<Customer[]> {
     const customerRepo: Repository<Customer> = AppDataSource.getRepository(Customer);
 
     const query = customerRepo.createQueryBuilder("customer");
+    query.where('customer.status = :status',{status:Status.ONLINE});
 
     if (loadRequest.getId()) {
-        query.where("customer.customerId = :id", { id: loadRequest.getId() });
+      query.andWhere("customer.customerId = :id", { id: loadRequest.getId() });
     }
 
-    if (loadRequest.getName()) {
-        if (loadRequest.getId()) {
-            query.orWhere("customer.name = :name", { name: loadRequest.getName() });
-        } else {
-            query.where("customer.name = :name", { name: loadRequest.getName() });
-        }
+    if (loadRequest.getSearchName()) {
+      const searchTerm = loadRequest.getSearchName().trim().toLowerCase();
+      if(searchTerm!==""){
+        query.andWhere(new Brackets((and) => {
+          and.orWhere("LOWER(customer.name) LIKE :searchTerm", { searchTerm: `%${searchTerm}%` })
+          and.orWhere("LOWER(customer.email) LIKE :email", {email:`%${searchTerm}%` })
+        }));
+      }
     }
-
-    const customer = await query.getOne();
-    return customer;
-}
+    query.orderBy('customer.name', 'ASC');
+     if (!loadRequest.getId() && !loadRequest.getSearchName()) {
+    query.take(50); 
+  } else {
+    query.take(10);
+  }
+    const customers = await query.getMany();
+    return customers;
+  }
 
 }

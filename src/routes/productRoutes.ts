@@ -8,5 +8,7 @@ router.use(auth);
 router.post("/manage", productController.manageProduct);
 router.post("/list", productController.productList);
 router.post("/stock", productController.stockList);
+router.post("/load", productController.loadProduct);
+
 
 module.exports = router;

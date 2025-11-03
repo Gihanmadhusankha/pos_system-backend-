@@ -43,12 +43,15 @@ exports.customerList = async (req: express.Request, res: express.Response, next:
   } catch (err) {
     next(err);
   }
+}
   //-------------------LOAD CUSTOMERS------------------------------
   exports.loadCustomer = async (req: express.Request, res: express.Response, next: NextFunction) => {
     try{
      let userInfo: LoginUserInfo = LoginUserInfoSup.getLoginUserInfoFromReq(req);
 
      let loadRequest:loadRequestDTO=new  loadRequestDTO();
+     loadRequest.fillViaRequest(req.body);
+     
      const response:CommonResponse=await customerService.loadCustomer(loadRequest,userInfo)
      res.send(response);
 
@@ -56,4 +59,4 @@ exports.customerList = async (req: express.Request, res: express.Response, next:
     next(err);
   }
 }
-}
+

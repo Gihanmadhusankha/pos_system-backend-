@@ -14,6 +14,6 @@ export class RouteConfiguration {
     app.use("/api/product", productRoutes);
     app.use("/api/order", orderRoutes);
     app.use("/api/user", staffRoutes);
-    //app.use("/api/customer", customerRoutes);
+    app.use("/api/customer", customerRoutes);
   }
 }

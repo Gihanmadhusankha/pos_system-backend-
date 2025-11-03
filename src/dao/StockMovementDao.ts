@@ -7,5 +7,5 @@ import { OrderItemDTO } from "../dto/orderItem-dto/orderItem-dto";
 
 export interface StockMovementDao {
     createMovement(items: OrderItemDTO, stockMovementRepo: Repository<StockMovement>): Promise<StockMovement>;
-    liststock(paginationDto:CommonPaginationDto): Promise<StockMovement[]> ;
+    liststock(paginationDto:CommonPaginationDto): Promise<{list:StockMovement[];count:number}> ;
 }

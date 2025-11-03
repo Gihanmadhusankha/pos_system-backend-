@@ -252,12 +252,22 @@ export class OrderServiceImpl implements OrderService {
           { code: ValidationType.INVALID_USER, type: ValidationStatus.WARNING, msgParams: null }
         );
       }
-      const orders = await this.orderDao.listOrder(paginationDto);
+       if(paginationDto.getFromDate()>(paginationDto.getToDate())){
+              throw new ValidationExceptionV2(
+                CodesRes.validationError,
+                "Invalid Date",
+                  { code: ValidationType.INVALID_DATE, type: ValidationStatus.WARNING, msgParams: null }
+      
+              )
+            }
+      
+      const {list,count} = await this.orderDao.listOrder(paginationDto,userInfo.getUserId());
       const orderResponses = await Promise.all(
-        orders.map(order => this.orderResponse(order))
+        list.map(order => this.orderResponse(order))
       );
       cr.setStatus(true);
       cr.setExtra(orderResponses);
+      cr.setCount(count);
     } catch (error: any) {
       console.log(error);
       cr.setStatus(false);

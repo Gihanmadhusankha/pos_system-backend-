@@ -6,8 +6,8 @@ export class ManageStaffRequest extends CrudDto {
 
     private name: string;
     private email: string;
-    private password: string;
-    private userId: number;
+    private password?: string;
+    private userId?: number;
     private role: UserRole.STAFF;
 
 
@@ -35,11 +35,11 @@ export class ManageStaffRequest extends CrudDto {
         this.password = password;
     }
 
-    public getUserId?(): number {
+    public getUserId(): number {
         return this.userId;
     }
 
-    public setUserId?(userId?: number): void {
+    public setUserId(userId: number): void {
         this.userId = userId;
     }
 
